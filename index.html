@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Aquaculture Aeration System Analysis - Professional Report</title>
+    <!-- เรียกใช้ Plotly.js -->
+    <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+    <!-- เรียกใช้ Font TH Sarabun New -->
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Sarabun', sans-serif; 
+            background-color: #f4f6f8; 
+            padding: 20px; 
+            color: #2c3e50; 
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+            padding: 30px; 
+            background: white; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            max-width: 900px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .header h1 { margin: 0; color: #1a252f; font-size: 32px; }
+        
+        .chart-container { 
+            background: white; 
+            max-width: 780px; 
+            margin: 0 auto 35px auto; 
+            padding: 25px 25px 15px 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08); 
+        }
+        
+        .chart-container.summary-container {
+            padding: 25px 25px 5px 25px; 
+            margin: 0 auto 20px auto; 
+        }
+
+        .plot-div { width: 100%; height: 500px; }
+        
+        .caption { 
+            text-align: center; 
+            font-size: 21px; 
+            margin-top: 10px; 
+            color: #34495e; 
+            padding: 12px; 
+            background: #f8f9fa; 
+            border-radius: 8px; 
+            line-height: 1.6;
+        }
+
+        .summary-container .caption {
+            margin-top: 0px;
+            padding: 6px 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>รายงานผลการทดลอง: ประสิทธิภาพของระบบการใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัย</h1>
+        <p style="font-size: 21px; margin-top: 10px; color: #7f8c8d;">การอนุบาลลูกปลานิลแดงตลอดระยะเวลา 70 วัน (แบ่งเป็น 2 ช่วงวัย คือ ช่วงที่ 1 วันที่ 1-28 และช่วงที่ 2 วันที่ 29-70)</p>
+    </div>
+
+    <div id="charts-wrapper"></div>
+
+<script>
+    const colors = ['#7f8c8d', '#2980b9', '#27ae60']; 
+    const names = ['INT-1', 'INT-2', 'INT-3'];
+    
+    const fontConfig = { family: 'Sarabun', size: 20, color: '#34495e' };
+    const axisTitleFont = { family: 'Sarabun', size: 18, color: '#2c3e50', weight: 'bold' };
+    const summaryAxisTitleFont = { family: 'Sarabun', size: 15, color: '#2c3e50', weight: 'bold' };
+    
+    const axisConfig = { 
+        showline: true, linewidth: 2, linecolor: '#2c3e50', 
+        tickfont: fontConfig, titlefont: axisTitleFont,
+        zeroline: false, rangemode: 'tozero', 
+        showgrid: true, gridcolor: '#ecf0f1',
+        automargin: true 
+    };
+
+    const x_days = [1, 14, 28, 42, 56, 70];
+    const x_adg = ["1-14", "15-28", "29-42", "43-56", "57-70", "ตลอดรุ่น"];
+    const x_fcr = ["14", "28", "42", "56", "70", "ตลอดรุ่น"];
+
+    const data = {
+        w: [{y:[2.50, 5.65, 7.95, 14.15, 33.20, 54.20],e:[0.12, 0.25, 0.30, 0.65, 1.50, 2.00]},{y:[2.50, 5.30, 7.05, 12.80, 29.80, 51.80],e:[0.15, 0.22, 0.28, 0.60, 1.40, 2.50]},{y:[2.50, 5.95, 8.25, 15.15, 37.80, 62.50],e:[0.13, 0.24, 0.25, 0.70, 1.80, 2.50]}],
+        adg: [{y:[0.23, 0.16, 0.44, 1.36, 1.50, 0.74], e:[0.02, 0.01, 0.03, 0.08, 0.12, 0.04]},{y:[0.20, 0.13, 0.41, 1.21, 1.57, 0.70], e:[0.02, 0.01, 0.02, 0.07, 0.10, 0.04]},{y:[0.25, 0.16, 0.49, 1.62, 1.76, 0.86], e:[0.02, 0.01, 0.03, 0.10, 0.15, 0.05]}],
+        survc: [{y:[3100, 3010, 2885, 2855, 2830, 2827], e:[0, 37, 47, 45, 52, 50]},{y:[3100, 2940, 2720, 2650, 2610, 2752], e:[0, 56, 78, 80, 85, 65]},{y:[3100, 3025, 2915, 2880, 2860, 2855], e:[0, 31, 37, 40, 42, 45]}],
+        survp: [{y:[100.0, 97.1, 93.1, 92.1, 91.3, 91.2], e:[0.0, 1.2, 1.5, 1.4, 1.6, 1.6]},{y:[100.0, 94.8, 87.7, 85.5, 84.2, 88.8], e:[0.0, 1.4, 1.7, 1.9, 2.0, 2.0]},{y:[100.0, 97.6, 94.0, 92.9, 92.3, 92.1], e:[0.0, 1.0, 1.2, 1.3, 1.3, 1.4]}],
+        fi: [{y:[0.35, 0.45, 0.52, 1.25, 3.25, 4.60], e:[0.00, 0.02, 0.03, 0.05, 0.12, 0.18]},{y:[0.35, 0.42, 0.46, 1.05, 2.65, 4.45], e:[0.00, 0.02, 0.03, 0.05, 0.12, 0.18]},{y:[0.35, 0.48, 0.55, 1.38, 3.45, 5.15], e:[0.00, 0.02, 0.02, 0.05, 0.15, 0.20]}],
+        fcr: [{y:[0.58, 1.25, 0.95, 1.08, 1.32, 1.18], e:[0.04, 0.08, 0.04, 0.05, 0.07, 0.05]},{y:[0.62, 1.45, 1.15, 1.35, 1.65, 1.40], e:[0.05, 0.10, 0.08, 0.10, 0.12, 0.08]},{y:[0.55, 1.15, 0.88, 0.98, 1.18, 1.05], e:[0.03, 0.07, 0.04, 0.04, 0.05, 0.04]}],
+        do: [{y:[5.35, 5.65, 5.58, 6.75, 6.68, 6.50], e:[0.12, 0.30, 0.35, 0.35, 0.40, 0.45]},{y:[5.25, 5.42, 5.35, 6.62, 6.55, 6.42], e:[0.18, 0.25, 0.28, 0.30, 0.35, 0.40]},{y:[5.30, 7.05, 6.95, 8.05, 7.85, 7.65], e:[0.15, 0.25, 0.30, 0.50, 0.55, 0.60]}],
+        temp: [{y:[29.25, 31.65, 30.81, 31.70, 31.40, 30.90], e:[0.12, 0.40, 0.35, 0.40, 0.35, 0.30]},{y:[29.05, 29.19, 29.80, 30.64, 30.24, 29.07], e:[0.15, 0.30, 0.25, 0.40, 0.35, 0.30]},{y:[29.20, 31.30, 30.60, 32.20, 31.95, 31.45], e:[0.10, 0.35, 0.30, 0.50, 0.45, 0.40]}],
+        ph: [{y:[7.84, 7.53, 7.38, 7.38, 7.34, 7.31], e:[0.06, 0.08, 0.10, 0.14, 0.16, 0.18]},{y:[7.83, 7.58, 7.42, 7.30, 7.13, 7.20], e:[0.08, 0.10, 0.12, 0.15, 0.18, 0.20]},{y:[7.85, 7.61, 7.40, 7.68, 7.60, 7.55], e:[0.06, 0.09, 0.12, 0.12, 0.15, 0.18]}],
+        tan: [{y:[0.19, 0.34, 0.51, 0.51, 0.57, 0.60], e:[0.02, 0.04, 0.06, 0.06, 0.08, 0.10]},{y:[0.19, 0.51, 0.91, 1.15, 1.22, 1.35], e:[0.03, 0.06, 0.10, 0.15, 0.18, 0.22]},{y:[0.19, 0.32, 0.40, 0.34, 0.38, 0.45], e:[0.02, 0.04, 0.05, 0.04, 0.05, 0.06]}],
+        no2: [{y:[0.20, 0.25, 1.08, 1.06, 1.08, 1.20], e:[0.02, 0.04, 0.12, 0.12, 0.15, 0.18]},{y:[0.10, 0.31, 1.05, 1.35, 1.42, 1.65], e:[0.03, 0.06, 0.15, 0.20, 0.25, 0.30]},{y:[0.18, 0.24, 0.74, 0.58, 0.65, 0.75], e:[0.02, 0.04, 0.08, 0.08, 0.10, 0.12]}],
+        no3: [{y:[0.75, 1.55, 4.50, 5.35, 5.50, 6.20], e:[0.10, 0.25, 0.50, 0.65, 0.70, 0.80]},{y:[0.63, 1.40, 3.50, 4.55, 4.85, 5.55], e:[0.08, 0.20, 0.45, 0.50, 0.55, 0.65]},{y:[0.65, 1.60, 5.20, 7.80, 8.60, 9.80], e:[0.08, 0.22, 0.55, 0.80, 0.95, 1.10]}],
+        tds: [{y:[789, 1789, 1120, 1350, 1480, 1750], e:[30, 90, 65, 90, 105, 125]},{y:[823, 1450, 1480, 1620, 1740, 1850], e:[35, 75, 85, 115, 135, 155]},{y:[780, 1150, 1250, 1350, 1480, 1750], e:[26, 60, 75, 90, 105, 125]}]
+    };
+
+    const summaryData = {
+        cost_kg: { y: [38.60, 46.50, 34.50], e: [1.5, 2.5, 1.2] },
+        cost_fish: { y: [1.80, 1.86, 1.95], e: [0.08, 0.11, 0.07] },
+        profit: { y: [1590, 3133, -1922], e: [760, 850, 500] },
+        bc: { y: [1.08, 1.17, 0.92], e: [0.06, 0.08, 0.04] },
+        roi: { y: [7.6, 16.6, -7.8], e: [5.0, 8.0, 3.0] }
+    };
+
+    const chartConfigs = [
+        { yt: 'น้ำหนัก (กรัม)', xt: 'ระยะเวลา (วัน)', x_val: x_days, d: data.w, type: 'line', caption: '<b>ภาพที่ 19</b> แสดงน้ำหนักเฉลี่ยของลูกปลานิลแดง (กรัม/ตัว) ที่อนุบาลในระบบการใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัยที่ต่างกัน 3 รูปแบบ (แบ่งเป็น 2 ช่วงวัย คือ ช่วงที่ 1 คือตั้งแต่วันที่ 1-28 และช่วงที่ 2 คือตั้งแต่วันที่ 29-70)' },
+        { yt: 'ADG (กรัม/วัน)', xt: 'ช่วงเวลา (วัน)', x_val: x_adg, d: data.adg, type: 'bar', caption: '<b>ภาพที่ 20</b> แสดงอัตราการเจริญเติบโตต่อวัน (ADG; กรัม/วัน) ของลูกปลานิลแดงที่อนุบาลในระบบการใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัยที่ต่างกัน 3 รูปแบบ (แบ่งเป็น 2 ช่วงวัย คือ ช่วงที่ 1 คือตั้งแต่วันที่ 1-28 และช่วงที่ 2 คือตั้งแต่วันที่ 29-70)' },
+        { yt: 'จำนวน (ตัว)', xt: 'ระยะเวลา (วัน)', x_val: x_days, d: data.survc, type: 'line', caption: '<b>ภาพที่ 21</b> แสดงจำนวนลูกปลานิลแดงที่เหลือรอด (ตัว) ที่อนุบาลในระบบการใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัยที่ต่างกัน 3 รูปแบบ (แบ่งเป็น 2 ช่วงวัย คือ ช่วงที่ 1 คือตั้งแต่วันที่ 1-28 และช่วงที่ 2 คือตั้งแต่วันที่ 29-70)' },
+        { yt: 'อัตรารอด (%)', xt: 'ระยะเวลา (วัน)', x_val: x_days, d: data.survp, type: 'line', caption: '<b>ภาพที่ 22</b> แสดงอัตราการรอดตาย (%) ของลูกปลานิลแดงที่อนุบาลในระบบการใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัยที่ต่างกัน 3 รูปแบบ (แบ่งเป็น 2 ช่วงวัย คือ ช่วงที่ 1 คือตั้งแต่วันที่ 1-28 และช่วงที่ 2 คือตั้งแต่วันที่ 29-70)' },
+        { yt: 'FI (Kg/day)', xt: 'ระยะเวลา (วัน)', x_val: x_days, d: data.fi, type: 'line', caption: '<b>ภาพที่ 23</b> แสดงอัตราการกินอาหาร (FI; Kg/day) ของลูกปลานิลแดงที่อนุบาลในระบบการใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัยที่ต่างกัน 3 รูปแบบ (แบ่งเป็น 2 ช่วงวัย คือ ช่วงที่ 1 คือตั้งแต่วันที่ 1-28 และช่วงที่ 2 คือตั้งแต่วันที่ 29-70)' },
+        { yt: 'FCR', xt: 'ระยะเวลา (วัน)', x_val: x_fcr, d: data.fcr, type: 'line', caption: '<b>ภาพที่ 24</b> แสดงอัตราการเปลี่ยนอาหารเป็นเนื้อ (FCR) ของลูกปลานิลแดงที่อนุบาลในระบบการใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัยที่ต่างกัน 3 รูปแบบ (แบ่งเป็น 2 ช่วงวัย คือ ช่วงที่ 1 คือตั้งแต่วันที่ 1-28 และช่วงที่ 2 คือตั้งแต่วันที่ 29-70)' },
+        { yt: 'DO (mg/L)', xt: 'ระยะเวลา (วัน)', x_val: x_days, d: data.do, type: 'line', caption: '<b>ภาพที่ 25</b> ปริมาณออกซิเจนละลายน้ำ (DO; mg/L) ในบ่ออนุบาลลูกปลานิลแดงในระบบที่ใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัยที่ต่างกัน 3 รูปแบบ' },
+        { yt: 'อุณหภูมิ (°C)', xt: 'ระยะเวลา (วัน)', x_val: x_days, d: data.temp, type: 'line', caption: '<b>ภาพที่ 26</b> อุณหภูมิน้ำ (Temperature; °C) ในบ่ออนุบาลลูกปลานิลแดงในระบบที่ใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัยที่ต่างกัน 3 รูปแบบ' },
+        { yt: 'pH', xt: 'ระยะเวลา (วัน)', x_val: x_days, d: data.ph, type: 'line', caption: '<b>ภาพที่ 27</b> ความเป็นกรดเป็นด่าง (pH) ในบ่ออนุบาลลูกปลานิลแดงในระบบที่ใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัยที่ต่างกัน 3 รูปแบบ' },
+        { yt: 'TAN (mg/L)', xt: 'ระยะเวลา (วัน)', x_val: x_days, d: data.tan, type: 'line', caption: '<b>ภาพที่ 28</b> แอมโมเนียรวม (TAN; mg/L) ในบ่ออนุบาลลูกปลานิลแดงในระบบที่ใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัยที่ต่างกัน 3 รูปแบบ' },
+        { yt: 'Nitrite (mg/L)', xt: 'ระยะเวลา (วัน)', x_val: x_days, d: data.no2, type: 'line', caption: '<b>ภาพที่ 29</b> ไนไตรท์ (Nitrite; mg/L) ในบ่ออนุบาลลูกปลานิลแดงในระบบที่ใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัยที่ต่างกัน 3 รูปแบบ' },
+        { yt: 'Nitrate (mg/L)', xt: 'ระยะเวลา (วัน)', x_val: x_days, d: data.no3, type: 'line', caption: '<b>ภาพที่ 30</b> ไนเตรท (Nitrate; mg/L) ในบ่ออนุบาลลูกปลานิลแดงในระบบที่ใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัยที่ต่างกัน 3 รูปแบบ' },
+        { yt: 'TDS (mg/L)', xt: 'ระยะเวลา (วัน)', x_val: x_days, d: data.tds, type: 'line', caption: '<b>ภาพที่ 31</b> ของแข็งที่ละลายน้ำ (TDS; mg/L) ในบ่ออนุบาลลูกปลานิลแดงในระบบที่ใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัยที่ต่างกัน 3 รูปแบบ' },
+        
+        { yt: 'ต้นทุน (บาท/กก. เนื้อปลา)', xt: 'ระยะเวลา', d: summaryData.cost_kg, type: 'summary', caption: '<b>ภาพที่ 32</b> ต้นทุนต่อการเปลี่ยนอาหารเป็นเนื้อปลา 1 กิโลกรัม (บาท) ของลูกปลานิลแดงที่อนุบาลในระบบการใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัย' },
+        { yt: 'ต้นทุน (บาท/ตัว)', xt: 'ระยะเวลา', d: summaryData.cost_fish, type: 'summary', caption: '<b>ภาพที่ 33</b> ต้นทุนอาหารต่อปลา 1 ตัว (บาท) ของลูกปลานิลแดงที่อนุบาลในระบบการใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัย' },
+        { yt: 'กำไรสุทธิ (บาท/บ่อ/รุ่น)', xt: 'รายการวิเคราะห์', d: summaryData.profit, type: 'summary', caption: '<b>ภาพที่ 34</b> วิเคราะห์กำไรสุทธิ (บาท/บ่อ/รุ่น 70 วัน) ของลูกปลานิลแดงที่อนุบาลในระบบการใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัย' },
+        { yt: 'B/C Ratio', xt: 'รายการวิเคราะห์', d: summaryData.bc, type: 'summary', caption: '<b>ภาพที่ 35</b> อัตราส่วนผลตอบแทนต่อต้นทุน (B/C Ratio) ของลูกปลานิลแดงที่อนุบาลในระบบการใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัย' },
+        { yt: 'ROI (%)', xt: 'รายการวิเคราะห์', d: summaryData.roi, type: 'summary', caption: '<b>ภาพที่ 36</b> อัตราผลตอบแทนจากการลงทุน (% ROI) ของลูกปลานิลแดงที่อนุบาลในระบบการใช้เครื่องเติมอากาศแบบบูรณาการตามช่วงวัย' }
+    ];
+
+    const wrapper = document.getElementById('charts-wrapper');
+
+    chartConfigs.forEach((cfg, index) => {
+        const container = document.createElement('div');
+        container.className = cfg.type === 'summary' ? 'chart-container summary-container' : 'chart-container';
+        const plotDiv = document.createElement('div');
+        plotDiv.id = `chart-${index}`;
+        plotDiv.className = 'plot-div';
+        const captionDiv = document.createElement('div');
+        captionDiv.className = 'caption';
+        captionDiv.innerHTML = cfg.caption; 
+        
+        container.appendChild(plotDiv);
+        container.appendChild(captionDiv);
+        wrapper.appendChild(container);
+
+        let traces = [];
+        if (cfg.type === 'line' || cfg.type === 'bar') {
+            for (let i = 0; i < 3; i++) {
+                let trace = {
+                    x: cfg.x_val, y: cfg.d[i].y, name: names[i], type: cfg.type === 'line' ? 'scatter' : 'bar',
+                    error_y: { type: 'data', array: cfg.d[i].e, visible: true, color: cfg.type === 'bar' ? '#2c3e50' : colors[i], thickness: 1.5 }
+                };
+                if (cfg.type === 'line') {
+                    trace.mode = 'lines+markers';
+                    trace.line = { color: colors[i], width: 3, shape: 'spline', smoothing: 1.0 };
+                    trace.marker = { size: 8 };
+                } else {
+                    trace.marker = { color: colors[i] };
+                }
+                traces.push(trace);
+            }
+        } else if (cfg.type === 'summary') {
+            traces.push({
+                x: names, y: cfg.d.y, type: 'bar', showlegend: false,
+                marker: { color: colors },
+                error_y: { type: 'data', array: cfg.d.e, visible: true, color: '#2c3e50', thickness: 1.5 }
+            });
+        }
+
+        let layout = {
+            font: fontConfig,
+            margin: { t: 30, b: 35, l: 70, r: 30 },
+            xaxis: { ...axisConfig, title: { text: `<b>${cfg.xt}</b>`, standoff: 10 } }, 
+            yaxis: { ...axisConfig, title: { text: `<b>${cfg.yt}</b>`, standoff: 12 } }
+        };
+
+        if (cfg.type !== 'summary') {
+            layout.legend = { 
+                orientation: 'h', x: 0.5, xanchor: 'center', y: 1.08, yanchor: 'bottom',
+                font: { family: 'Sarabun', size: 16, color: '#34495e' },
+                itemwidth: 175
+            };
+            layout.margin.t = 70; 
+        } else {
+            layout.xaxis.title.font = summaryAxisTitleFont;
+            layout.margin.t = 45; 
+            layout.margin.b = 10; 
+            layout.annotations = [];
+            for (let i = 0; i < 3; i++) {
+                let val = cfg.d.y[i];
+                let err = cfg.d.e[i];
+                let isPositive = val >= 0;
+                let yPosition = isPositive ? (val + err) : (val - err);
+                layout.annotations.push({
+                    x: names[i],
+                    y: yPosition,
+                    text: `<b>${val}</b>`, 
+                    showarrow: false,
+                    xanchor: 'center',
+                    yanchor: isPositive ? 'bottom' : 'top', 
+                    yshift: isPositive ? 10 : -10, 
+                    font: { family: 'Sarabun', size: 20, color: '#2c3e50' }
+                });
+            }
+        }
+        
+        if (cfg.type === 'bar') layout.barmode = 'group';
+
+        const configOptions = { responsive: true, toImageButtonOptions: { format: 'png', filename: `Chart_${index+1}`, height: 500, width: 750, scale: 10 } };
+
+        Plotly.newPlot(plotDiv.id, traces, layout, configOptions);
+    });
+</script>
+</body>
+</html>
